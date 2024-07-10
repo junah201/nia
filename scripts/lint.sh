@@ -1,0 +1,1 @@
+PYTHONPATH="$(pwd)" poetry run black lambdas shared

@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "nia"
+version = "1.0.0"
+description = "nia"
+authors = ["junah201 <junah.dev@gmail.com>"]
+maintainers = ["junah201 <junah.dev@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+isort = "^5.13.2"
+
+[project.urls]
+homepage = "https://github.com/junah201/nia"
+"Issue tracker" = "https://github.com/junah201/nia/issues"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.black]
+line-length = 125
+skip-string-normalization = true
+
+[tool.coverage.run]
+omit = [
+    "lambdas/*",
+    "shared/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+]
+
+[tool.isort]
+profile = "black"
+combine_as_imports = true
+combine_star = true
+line_length = 125
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
