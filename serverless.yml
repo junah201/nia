@@ -16,6 +16,8 @@ provider:
     Environment: ${self:provider.stage}
   iam:
     role: LambdaDefaultRole
+  environment:
+    DYNAMODB_TABLE_NAME: ${self:service}-db
 
 resources:
   Resources:
@@ -45,6 +47,45 @@ resources:
                     - logs:CreateLogStream
                     - logs:PutLogEvents
                   Resource: "arn:aws:logs:*:*:*"
+
+    DynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-db
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+          - AttributeName: EntityType
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: GSI-SK-PK
+            KeySchema:
+              - AttributeName: SK
+                KeyType: HASH
+              - AttributeName: PK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: GSI-EntityType-PK
+            KeySchema:
+              - AttributeName: EntityType
+                KeyType: HASH
+              - AttributeName: PK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        # Enable TTL
+        TimeToLiveSpecification:
+          AttributeName: TTL
+          Enabled: true
 
 package:
   include:
