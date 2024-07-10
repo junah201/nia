@@ -19,6 +19,15 @@ provider:
   environment:
     DYNAMODB_TABLE_NAME: ${self:service}-db
 
+functions:
+  redirect_url:
+    handler: lambdas/redirect_url.handler
+    name: redirect_url
+    description: 단축된 URL을 리다이렉트합니다.
+    events: []
+    url:
+      cors: true
+
 resources:
   Resources:
     LambdaDefaultRole:
@@ -48,6 +57,70 @@ resources:
                     - logs:PutLogEvents
                   Resource: "arn:aws:logs:*:*:*"
 
+    RedirectCFDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          PriceClass: PriceClass_200
+          Origins:
+            - Id: redirect_url
+              DomainName:
+                Fn::Select:
+                  - 2
+                  - Fn::Split:
+                      - "/"
+                      - Fn::GetAtt:
+                          - RedirectUnderscoreurlLambdaFunctionUrl
+                          - FunctionUrl
+              ConnectionAttempts: 3
+              ConnectionTimeout: 10
+              CustomOriginConfig:
+                OriginProtocolPolicy: https-only
+                HTTPPort: 80
+                HTTPSPort: 443
+                OriginSSLProtocols:
+                  - TLSv1.2
+          Enabled: true
+          ViewerCertificate:
+            SslSupportMethod: sni-only
+            AcmCertificateArn: arn:aws:acm:us-east-1:533267168750:certificate/4dd58504-54f9-4358-818b-5940a86bfbcc
+          Aliases:
+            - it.nia.junah.dev
+          CacheBehaviors:
+            - PathPattern: /
+              TargetOriginId: redirect_url
+              ViewerProtocolPolicy: redirect-to-https
+              AllowedMethods:
+                - HEAD
+                - GET
+                - OPTIONS
+              CachedMethods:
+                - GET
+                - HEAD
+              DefaultTTL: 0
+              MinTTL: 0
+              MaxTTL: 31536000
+              ForwardedValues:
+                QueryString: true
+                Cookies:
+                  Forward: none
+          DefaultCacheBehavior:
+            TargetOriginId: redirect_url
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - HEAD
+              - GET
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+            DefaultTTL: 0
+            MinTTL: 0
+            MaxTTL: 31536000
+            ForwardedValues:
+              QueryString: true
+              Cookies:
+                Forward: none
     DynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
