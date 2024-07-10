@@ -55,12 +55,7 @@ def handler(event, context):
     description = item.get("metadata", {}).get("description", None)
     image = item.get("metadata", {}).get("image", None)
 
-    url = f'<meta property="og:url" content="{url}">'
-    title = f'<meta property="og:title" content="{title}">' if title else ""
-    description = f'<meta property="og:description" content="{description}">' if description else ""
-    image = f'<meta property="og:image" content="{image}">' if image else ""
-
-    metadata = "\n".join([url, title, description, image])
+    metadata = "\n".join(item.get("metadatas", []) or [])
 
     html = html.replace("{{metadata}}", metadata, 1)
 

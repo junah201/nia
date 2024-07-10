@@ -38,7 +38,7 @@ def get_random_url(original_url: str):
     raise Exception("단축 URL을 생성하는 것에 실패하였습니다.")
 
 
-def get_metadata(url: str):
+def get_metadatas(url: str) -> list[str]:
     res = urllib.request.urlopen(
         urllib.request.Request(
             url=url,
@@ -49,22 +49,14 @@ def get_metadata(url: str):
         ),
         timeout=5,
     )
-    soup = BeautifulSoup(res, "html.parser")
+    soup = BeautifulSoup(res, "html5lib")
 
-    meta_tags = soup.find_all("meta")
+    head = soup.find("head")
+    if head is None:
+        return []
+    meta_tags = head.find_all("meta")
 
-    title = None
-    descripotion = None
-    image = None
-    for tag in meta_tags:
-        if tag.get("property") == "og:title":
-            title = tag.get("content")
-        elif tag.get("property") == "og:description":
-            description = tag.get("content")
-        elif tag.get("property") == "og:image":
-            image = tag.get("content")
-
-    return title, descripotion, image
+    return [str(tag) for tag in meta_tags]
 
 
 @middleware(logger)
@@ -100,7 +92,7 @@ def handler(event, context):
     else:
         short_url = get_random_url(original_url) if short_url is None else short_url
 
-    title, descripotion, image = get_metadata(original_url)
+    metas = get_metadatas(original_url)
 
     # 생성
     res = table.put_item(
@@ -109,11 +101,7 @@ def handler(event, context):
             "SK": f"SURL#{short_url}",
             "TTL": int(ttl + time.time()),
             "created_at": f"{datetime.now()}",
-            "metadata": {
-                "title": title,
-                "description": descripotion,
-                "image": image,
-            },
+            "metadatas": metas,
         }
     )
 
