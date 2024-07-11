@@ -1,4 +1,5 @@
 service: nia
+useDotenv: true
 
 provider:
   name: aws
@@ -90,6 +91,105 @@ resources:
         RestApiId:
           Ref: ApiGatewayRestApi
         Stage: prod
+
+    ApiGatewayAuthorizer:
+      Type: AWS::ApiGateway::Authorizer
+      Properties:
+        Name: CognitoAuthorizer
+        IdentitySource: method.request.header.Authorization
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        Type: COGNITO_USER_POOLS
+        ProviderARNs:
+          - Fn::GetAtt:
+              - CognitoUserPool
+              - Arn
+
+    CognitoUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: NIA-UserPool
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireLowercase: false
+            RequireNumbers: false
+            RequireSymbols: false
+            RequireUppercase: false
+        MfaConfiguration: OFF
+
+    CognitoUserPoolIdentityProviderGoogle:
+      Type: AWS::Cognito::UserPoolIdentityProvider
+      Properties:
+        ProviderName: Google
+        UserPoolId:
+          Ref: CognitoUserPool
+        ProviderType: Google
+        ProviderDetails:
+          client_id: ${env:GOOGLE_CLIENT_ID}
+          client_secret: ${env:GOOGLE_CLIENT_SECRET}
+          authorize_scopes: ${env:GOOGLE_AUTHORIZE_SCOPES}
+        AttributeMapping:
+          email: email
+          username: sub
+    CognitoUserPoolIdentityProviderFacebook:
+      Type: AWS::Cognito::UserPoolIdentityProvider
+      Properties:
+        ProviderName: Facebook
+        UserPoolId:
+          Ref: CognitoUserPool
+        ProviderType: Facebook
+        ProviderDetails:
+          client_id: ${env:FACEBOOK_APP_ID}
+          client_secret: ${env:FACEBOOK_CLIENT_SECRET}
+          authorize_scopes: ${env:FACEBOOK_AUTHORIZE_SCOPES}
+        AttributeMapping:
+          email: email
+          username: id
+
+    CognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        AllowedOAuthFlowsUserPoolClient: True
+        ClientName: NIA-UserPoolClient
+        UserPoolId:
+          Ref: CognitoUserPool
+        GenerateSecret: false
+        ExplicitAuthFlows:
+          - ALLOW_REFRESH_TOKEN_AUTH
+          - ALLOW_USER_SRP_AUTH
+        PreventUserExistenceErrors: ENABLED
+        SupportedIdentityProviders:
+          - COGNITO
+          - Google
+          - Facebook
+          - Kakao
+        CallbackURLs:
+          - https://nia.junah.dev
+          - https://nia.junah.dev/token
+          - http://localhost:5173/token
+        LogoutURLs:
+          - https://nia.junah.dev/logout
+        AllowedOAuthFlows:
+          - implicit
+        AllowedOAuthScopes:
+          - aws.cognito.signin.user.admin
+
+    CognitoUserPoolDomain:
+      Type: AWS::Cognito::UserPoolDomain
+      Properties:
+        Domain: nia
+        UserPoolId:
+          Ref: CognitoUserPool
+
+    CognitoCustomDomain:
+      Type: AWS::Cognito::UserPoolDomain
+      Properties:
+        Domain: auth.nia.junah.dev
+        UserPoolId:
+          Ref: CognitoUserPool
+        CustomDomainConfig:
+          CertificateArn: arn:aws:acm:us-east-1:533267168750:certificate/4dd58504-54f9-4358-818b-5940a86bfbcc
 
     RedirectCFDistribution:
       Type: AWS::CloudFront::Distribution
@@ -206,6 +306,7 @@ package:
     - "frontend/**"
     - "serverless.yml"
     - ".serverless/**"
+    - "scripts/**"
 
 custom:
   pythonRequirements:
@@ -214,3 +315,4 @@ custom:
 
 plugins:
   - serverless-python-requirements
+  - serverless-dotenv-plugin
