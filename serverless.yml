@@ -19,6 +19,10 @@ provider:
     role: LambdaDefaultRole
   environment:
     DYNAMODB_TABLE_NAME: ${self:service}-db
+  logs:
+    logFormat: JSON
+    applicationLogLevel: INFO
+    systemLogLevel: INFO
 
 functions:
   redirect_url:
@@ -163,7 +167,6 @@ resources:
           - COGNITO
           - Google
           - Facebook
-          - Kakao
         CallbackURLs:
           - https://nia.junah.dev
           - https://nia.junah.dev/token
