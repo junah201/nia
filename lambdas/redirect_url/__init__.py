@@ -40,7 +40,11 @@ def handler(event, context):
         )
 
         if res.get("Count", 0) == 0:
-            return {"statusCode": 404, "body": "Not Found"}
+            return {
+                "statusCode": 302,
+                "headers": {"Location": "https://nia.junah.dev/404"},
+                "body": "",
+            }
 
         item = dynamo_to_python(res["Items"][0])
         url = item["PK"].split("#")[1]
