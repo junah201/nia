@@ -32,11 +32,10 @@ def handler(event, context):
 
         res = dynamodb.query(
             TableName=DYNAMODB_TABLE_NAME,
-            IndexName="GSI-SK-PK",
-            KeyConditionExpression="SK = :sk",
-            ExpressionAttributeValues={":sk": {"S": f"SURL#{short_url}"}, ":now": {"N": str(time.time())}},
-            ExpressionAttributeNames={"#TTL": "TTL"},
+            KeyConditionExpression="PK = :pk",
             FilterExpression="#TTL > :now",
+            ExpressionAttributeValues={":pk": {"S": f"SURL#{short_url}"}, ":now": {"N": str(time.time())}},
+            ExpressionAttributeNames={"#TTL": "TTL"},
         )
 
         if res.get("Count", 0) == 0:
@@ -47,7 +46,7 @@ def handler(event, context):
             }
 
         item = dynamo_to_python(res["Items"][0])
-        url = item["PK"].split("#")[1]
+        url = item["SK"].split("#")[1]
 
     with open("./lambdas/redirect_url/index.html", "r", encoding="utf-8") as f:
         html = f.read()
@@ -55,12 +54,8 @@ def handler(event, context):
     # url 삽입
     html = html.replace("{{url}}", url, -1)  # 뒤에서부터 1개만 바꾸기
     # metadata 삽입
-    title = item.get("metadata", {}).get("title", None)
-    description = item.get("metadata", {}).get("description", None)
-    image = item.get("metadata", {}).get("image", None)
-
     metadata = "\n".join(item.get("metadatas", []) or [])
 
-    html = html.replace("{{metadata}}", metadata, 1)
+    html = html.replace("{{metadata}}", metadata, 1)  # 앞에서부터 1개만 바꾸기
 
     return {"statusCode": 200, "headers": {"Content-Type": "text/html"}, "body": html}

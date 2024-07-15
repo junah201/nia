@@ -81,11 +81,10 @@ def handler(event, context):
     if is_custom_url:
         res = dynamodb.query(
             TableName=DYNAMODB_TABLE_NAME,
-            IndexName="GSI-SK-PK",
-            KeyConditionExpression="SK = :sk",
-            ExpressionAttributeValues={":sk": {"S": f"SURL#{short_url}"}, ":now": {"N": str(time.time())}},
-            ExpressionAttributeNames={"#TTL": "TTL"},
+            KeyConditionExpression="PK = :pk",
             FilterExpression="#TTL > :now",
+            ExpressionAttributeValues={":pk": {"S": f"SURL#{short_url}"}, ":now": {"N": str(time.time())}},
+            ExpressionAttributeNames={"#TTL": "TTL"},
         )
         if res["Count"] != 0:
             return {
@@ -100,8 +99,8 @@ def handler(event, context):
     # 생성
     res = table.put_item(
         Item={
-            "PK": f"URL#{original_url}",
-            "SK": f"SURL#{short_url}",
+            "PK": f"SURL#{short_url}",
+            "SK": f"URL#{original_url}",
             "TTL": int(ttl + time.time()),
             "created_at": f"{datetime.now()}",
             "metadatas": metas,
