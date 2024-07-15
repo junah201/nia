@@ -49,6 +49,9 @@ def get_metadatas(url: str) -> list[str]:
         ),
         timeout=5,
     )
+    if not (200 <= res.getcode() < 300):
+        return []
+
     soup = BeautifulSoup(res, "html5lib")
 
     head = soup.find("head")
