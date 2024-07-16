@@ -2,11 +2,12 @@ import { lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 import Loadable from '@/components/Loadable';
+import MainLayout from '@/layouts/MainLayout';
 
 const ROUTES = Object.freeze([
   {
     PATH: '/',
-    ELEMENT: Loadable(() => <>/</>),
+    ELEMENT: Loadable(lazy(() => import('@/pages/Home'))),
   },
   {
     PATH: '/login',
@@ -35,9 +36,11 @@ const ROUTES = Object.freeze([
 export const Router = () => {
   return (
     <Routes>
-      {ROUTES.map(({ PATH, ELEMENT }) => (
-        <Route key={PATH} path={PATH} element={<ELEMENT />} />
-      ))}
+      <Route element={<MainLayout />}>
+        {ROUTES.map(({ PATH, ELEMENT }) => (
+          <Route key={PATH} path={PATH} element={<ELEMENT />} />
+        ))}
+      </Route>
     </Routes>
   );
 };
