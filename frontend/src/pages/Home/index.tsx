@@ -9,7 +9,7 @@ const Home = () => {
   const [shortUrl, setShortUrl] = useState<string | null>(null);
 
   return (
-    <div className="w-full max-w-5xl space-y-6">
+    <div className="w-full max-w-4xl space-y-6">
       <Form shortUrl={shortUrl} setShortUrl={setShortUrl} />
       <MyURLs />
       <Description />

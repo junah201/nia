@@ -30,9 +30,9 @@ interface BenefitProps {
 
 const Benefit = ({ Icon, title, description }: BenefitProps) => {
   return (
-    <div className="flex flex-col items-center justify-center p-4 border shadow-sm rounded-lg">
+    <div className="flex flex-col items-center px-4 py-4 sm:py-8 border shadow-sm rounded-lg">
       <Icon size={52} className="stroke-primary" />
-      <h4 className="text-lg font-bold">{title}</h4>
+      <h4 className="text-sm sm:text-lg font-bold text-center">{title}</h4>
       <p className="text-center text-xs antialiased">{description}</p>
     </div>
   );

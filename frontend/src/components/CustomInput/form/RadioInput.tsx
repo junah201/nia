@@ -31,12 +31,14 @@ export const RadioInput = ({
           {options.map((option) => (
             <FormItem
               key={option.value}
-              className="flex items-center space-x-3 space-y-0"
+              className="flex items-center space-x-3 space-y-0 full-x"
             >
               <FormControl>
                 <RadioGroupItem value={option.value} />
               </FormControl>
-              <FormLabel className="font-normal">{option.label}</FormLabel>
+              <FormLabel className="font-normal grow sm:grow-0">
+                {option.label}
+              </FormLabel>
             </FormItem>
           ))}
         </RadioGroup>
