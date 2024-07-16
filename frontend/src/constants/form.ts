@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { Control, UseFormRegister } from 'react-hook-form';
 
 export interface FormRules<RegisterField = any> {
