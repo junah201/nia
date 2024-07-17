@@ -170,6 +170,8 @@ resources:
         CallbackURLs:
           - https://nia.junah.dev
           - https://nia.junah.dev/token
+          - https://nia-cyan.vercel.app
+          - https://nia-cyan.vercel.app/token
           - http://localhost:5173/token
         LogoutURLs:
           - https://nia.junah.dev/logout

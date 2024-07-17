@@ -11,7 +11,7 @@ const ROUTES = Object.freeze([
   },
   {
     PATH: '/login',
-    ELEMENT: Loadable(() => <>/login</>),
+    ELEMENT: Loadable(lazy(() => import('@/pages/Login'))),
   },
   {
     PATH: '/logout',
