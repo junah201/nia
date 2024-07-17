@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
+import { isLogin } from '@/lib/Login';
 
 const MainLayout = () => {
   return (
@@ -8,9 +9,15 @@ const MainLayout = () => {
       <header className="bg-primary p-4 flex justify-between items-center">
         <h1 className="text-lg font-bold text-white">NIA</h1>
         <Button variant="outline" asChild>
-          <a href="/login" className="hover:underline">
-            로그인
-          </a>
+          {isLogin() ? (
+            <a href="/logout" className="hover:underline">
+              로그아웃
+            </a>
+          ) : (
+            <a href="/login" className="hover:underline">
+              로그인
+            </a>
+          )}
         </Button>
       </header>
       <main className="flex-grow flex flex-col items-center p-4">
