@@ -18,6 +18,10 @@ const ROUTES = Object.freeze([
     ELEMENT: Loadable(() => <>/logout</>),
   },
   {
+    PATH: '/token',
+    ELEMENT: Loadable(lazy(() => import('@/pages/Token'))),
+  },
+  {
     // URL별 통계 페이지
     PATH: '/:slug/stats',
     ELEMENT: Loadable(() => <>/:slug/stats</>),
