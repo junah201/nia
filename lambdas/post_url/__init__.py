@@ -10,12 +10,14 @@ from datetime import datetime
 import boto3
 from bs4 import BeautifulSoup
 
-from shared import middleware
+from shared import get_user_from_token, middleware
 
 DYNAMODB_TABLE_NAME = os.environ.get("DYNAMODB_TABLE_NAME", "nia-db")
 
 dynamodb = boto3.client('dynamodb')
 table = boto3.resource('dynamodb').Table(DYNAMODB_TABLE_NAME)
+
+cognito_client = boto3.client('cognito-idp')
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -69,6 +71,13 @@ def handler(event, context):
     short_url = body.get("short_url", None)
     ttl = time.time() + body.get("ttl", 60 * 60 * 24 * 30 * 6)  # 6 months
 
+    username = event.get("requestContext", {}).get("authorizer", {}).get("claims", {}).get("cognito:username", None)
+    if username is None:
+        return {
+            "statusCode": 401,
+            "body": json.dumps({"error": "로그인이 필요합니다."}),
+        }
+
     if original_url is None:
         return {
             "statusCode": 400,
@@ -104,6 +113,7 @@ def handler(event, context):
             "TTL": int(ttl + time.time()),
             "created_at": f"{datetime.now()}",
             "metadatas": metas,
+            "user": username,
         }
     )
 

@@ -10,11 +10,11 @@ const MainLayout = () => {
         <h1 className="text-lg font-bold text-white">NIA</h1>
         <Button variant="outline" asChild>
           {isLogin() ? (
-            <a href="/logout" className="hover:underline">
+            <a href="/logout" className="hover:underline font-bold">
               로그아웃
             </a>
           ) : (
-            <a href="/login" className="hover:underline">
+            <a href="/login" className="hover:underline font-bold">
               로그인
             </a>
           )}

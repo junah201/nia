@@ -23,13 +23,13 @@ const ROUTES = Object.freeze([
   },
   {
     // URL별 통계 페이지
-    PATH: '/:slug/stats',
-    ELEMENT: Loadable(() => <>/:slug/stats</>),
+    PATH: '/url/:slug',
+    ELEMENT: Loadable(() => <>/url/:slug</>),
   },
   {
     // 전체 계정 통계 페이지
-    PATH: '/@me/stats',
-    ELEMENT: Loadable(() => <>/@me/stats</>),
+    PATH: '/url/all',
+    ELEMENT: Loadable(lazy(() => import('@/pages/Urls'))),
   },
   {
     PATH: '/*',

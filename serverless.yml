@@ -41,6 +41,38 @@ functions:
           path: /url
           method: post
           cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+  get_all_urls:
+    handler: lambdas/get_all_urls.handler
+    name: get_all_urls
+    description: 모든 URL을 반환합니다.
+    events:
+      - http:
+          path: /url/all
+          method: get
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+  update_statistics:
+    handler: lambdas/update_statistics.handler
+    name: update_statistics
+    description: URL의 통계를 업데이트합니다.
+    events:
+      - s3:
+          bucket: !Ref RedirectLoggingS3Bucket
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: logs/
+            - suffix: .gz
+          existing: true
+    dependsOn:
+      - RedirectLoggingS3Bucket
+      # - LambdaPermissionTriggeredBucketS3
 
 resources:
   Resources:
@@ -70,6 +102,20 @@ resources:
                     - logs:CreateLogStream
                     - logs:PutLogEvents
                   Resource: "arn:aws:logs:*:*:*"
+                - Effect: Allow
+                  Action:
+                    - s3:PutBucketNotification
+                  Resource: !GetAtt RedirectLoggingS3Bucket.Arn
+
+    LambdaPermissionTriggeredBucketS3:
+      Type: AWS::Lambda::Permission
+      DependsOn:
+        - RedirectLoggingS3Bucket
+      Properties:
+        FunctionName: !GetAtt UpdateUnderscorestatisticsLambdaFunction.Arn
+        Action: lambda:InvokeFunction
+        Principal: s3.amazonaws.com
+        SourceArn: !GetAtt RedirectLoggingS3Bucket.Arn
 
     ApiGatewayRestApi:
       Type: AWS::ApiGateway::RestApi
@@ -109,6 +155,18 @@ resources:
               - CognitoUserPool
               - Arn
 
+    ApiGateway401Response:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseType: UNAUTHORIZED
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        StatusCode: 401
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        ResponseTemplates:
+          application/json: '{"message":$context.error.messageString}'
+
     CognitoUserPool:
       Type: AWS::Cognito::UserPool
       Properties:
@@ -121,6 +179,13 @@ resources:
             RequireSymbols: false
             RequireUppercase: false
         MfaConfiguration: OFF
+        Schema:
+          - Name: membership
+            AttributeDataType: String
+            Mutable: true
+            StringAttributeConstraints:
+              MinLength: 0
+              MaxLength: 30
 
     CognitoUserPoolIdentityProviderGoogle:
       Type: AWS::Cognito::UserPoolIdentityProvider
@@ -172,13 +237,20 @@ resources:
           - https://nia.junah.dev/token
           - https://nia-cyan.vercel.app
           - https://nia-cyan.vercel.app/token
-          - http://localhost:5173/token
+          - http://localhost:3000/token
         LogoutURLs:
           - https://nia.junah.dev/logout
+          - https://nia-cyan.vercel.app/logout
+          - http://localhost:3000/logout
         AllowedOAuthFlows:
           - implicit
         AllowedOAuthScopes:
           - aws.cognito.signin.user.admin
+          - openid
+          - email
+        AccessTokenValidity: 1
+        TokenValidityUnits:
+          AccessToken: days
 
     CognitoUserPoolDomain:
       Type: AWS::Cognito::UserPoolDomain
@@ -196,10 +268,28 @@ resources:
         CustomDomainConfig:
           CertificateArn: arn:aws:acm:us-east-1:533267168750:certificate/4dd58504-54f9-4358-818b-5940a86bfbcc
 
+    RedirectLoggingS3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: nia-redirection-logs
+        # AccessControl: LogDeliveryWrite
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
+        OwnershipControls:
+          Rules:
+            - ObjectOwnership: ObjectWriter
+
     RedirectCFDistribution:
       Type: AWS::CloudFront::Distribution
       Properties:
         DistributionConfig:
+          Logging:
+            Bucket: !GetAtt RedirectLoggingS3Bucket.DomainName
+            IncludeCookies: false
+            Prefix: logs/
           PriceClass: PriceClass_200
           Origins:
             - Id: redirect_url
@@ -236,7 +326,7 @@ resources:
               CachedMethods:
                 - GET
                 - HEAD
-              DefaultTTL: 0
+              DefaultTTL: 3600
               MinTTL: 0
               MaxTTL: 31536000
               ForwardedValues:
@@ -253,13 +343,14 @@ resources:
             CachedMethods:
               - GET
               - HEAD
-            DefaultTTL: 0
+            DefaultTTL: 3600
             MinTTL: 0
             MaxTTL: 31536000
             ForwardedValues:
               QueryString: true
               Cookies:
                 Forward: none
+
     DynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -270,7 +361,9 @@ resources:
             AttributeType: S
           - AttributeName: SK
             AttributeType: S
-          - AttributeName: EntityType
+          - AttributeName: type
+            AttributeType: S
+          - AttributeName: user
             AttributeType: S
         KeySchema:
           - AttributeName: PK
@@ -286,15 +379,22 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
-          - IndexName: GSI-EntityType-PK
+          - IndexName: GSI-type-PK
             KeySchema:
-              - AttributeName: EntityType
+              - AttributeName: type
                 KeyType: HASH
               - AttributeName: PK
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
-        # Enable TTL
+          - IndexName: GSI-user-PK
+            KeySchema:
+              - AttributeName: user
+                KeyType: HASH
+              - AttributeName: PK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
         TimeToLiveSpecification:
           AttributeName: TTL
           Enabled: true

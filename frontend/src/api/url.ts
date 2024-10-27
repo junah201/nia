@@ -12,3 +12,8 @@ export const postURL = async (data: PostUrlParams) => {
   const res = await axios.post(API.URL.POST, data);
   return res;
 };
+
+export const getAllURL = async () => {
+  const res = await axios.get(API.URL.GET_ALL);
+  return res;
+};
